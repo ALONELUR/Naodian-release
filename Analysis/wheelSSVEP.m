@@ -49,6 +49,8 @@ classdef  wheelSSVEP < handle
         %实时分析使用参数
         INIT_COUNT = 0;
         INIT_COUNT_END = 1;
+
+        %Mode
     end
 
     methods (Access = public)
@@ -71,8 +73,13 @@ classdef  wheelSSVEP < handle
             app.Axesplot();
             app.judgeANDsend();
             app.pause();
+        end
+
+        function mode3(app)
+            app.training();
             
         end
+        
         
         function receive (app,divided)
             tic
@@ -162,7 +169,18 @@ classdef  wheelSSVEP < handle
             app.TotalResult = cca_analysis(testdata, app.RefData, ...
                 app.Tragetfreq);
         end
-        
+
+        function  training(app)
+            TrainNum = size(app.Tragetfreq, 2);
+            for iTrain = 1 : TrainNum
+                fwrite(app.scom, [85 64+index 10]);
+                app.receive(0.5);
+                app.AnalysisData = app.TempData;
+                app.OrigtolData = app.OrigData;
+                app.analytical_data(1);   
+            end
+        end
+           
         function Axesplot(app)
                 figure(1);
                 app.Ccaplot1 = plot(1:length(app.TotalResult), app.TotalResult);
@@ -212,11 +230,11 @@ classdef  wheelSSVEP < handle
                 app.strRec = fread(obj, 1);
                 % 解析数据
                 if app.strRec == 85
-                    fprintf('Start as Mod1\n');
+                    fprintf('Start as Mode 1\n');
                     app.reference(app.INIT_COUNT_END);
                     app.mode1();
                 elseif app.strRec == 86
-                    fprintf('Start as Mod2\n');
+                    fprintf('Start as Mode 2\n');
                    app.reference(1);
                    app.mode2();
                 end
