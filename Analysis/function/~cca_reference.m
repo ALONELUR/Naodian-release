@@ -31,14 +31,14 @@ Explain :
 =========================================
 %}
 
-    channelNum = harms_num*2;
+    channelNum = 4;
     yef = zeros(channelNum, sample_num, TargetNum);
     %初始化函数输出 yef(# 输出谐波, # 采样长度，# 目标频率数量)
     t = repmat(t, channelNum, 1);
     for targ_i = 1:TargetNum
         temp = zeros(channelNum, sample_num);
-        for harm_i = 1:2:channelNum-1
-            temp(harm_i:harm_i+1,:) = [sin(2*pi*targ_fre(targ_i)*2^HarmList((harm_i+1)/2)*t);cos(2*pi*targ_fre(targ_i)*2^HarmList((harm_i+1)/2)*t)];
+        for harm_i = 1:harms_num
+            temp = temp + exp(-0.7*abs(HarmList(harm_i)))*sin(2*pi*targ_fre(targ_i)*2^HarmList(harm_i)*t+2*pi*rand(channelNum, 1));
         end
         yef(:,:,targ_i) = temp;
     end
