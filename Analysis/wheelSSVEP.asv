@@ -190,7 +190,7 @@ classdef  wheelSSVEP < handle
         function reference(app,divided)
             DATA_NUM = round(app.Gazetime * app.Samplefreq / divided);
             SampleNum = floor(DATA_NUM / 2);
-            app.RefData = cca_reference(app.Tragetfreq,app.Samplefreq/2, SampleNum*divided,[-2,3]);
+            app.RefData = cca_reference(app.Tragetfreq,app.Samplefreq/2, SampleNum*divided,[-1,2]);
         end
     
         function judgeANDsend(app)
@@ -201,7 +201,7 @@ classdef  wheelSSVEP < handle
             MAX = p(index);
             TargetN = size(p,2);
             Average = (sum(p) - MAX) / (TargetN - 1);
-            if p(index)>0.4
+            if p(index)>0.34
                 fwrite(app.scom, [85 48+index 10]);
             else
                 fwrite(app.scom, [85 48 10]);
@@ -264,7 +264,7 @@ classdef  wheelSSVEP < handle
             app.Gazetime = 2;
             app.HarmNum = 5;
             app.FilterNum = 5;
-            app.Tragetfreq = [18.3 17 20.3 19.3 21 16.3 22.3 15.3 ];
+            app.Tragetfreq = [18.3 17 20.3 19 21 16.3 22.3 15.3 ];
             app.Samplefreq = 500;
             app.Magnification = 1;
             
