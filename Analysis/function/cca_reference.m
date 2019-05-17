@@ -17,19 +17,25 @@ Explain : TargetNum:目标刺激频率数量
     if size(harms,2)~=2 || rem(harms(1),1) ~= 0 || rem(harms(2),1) ~= 0
         error("function: cca_regerence, 输入谐波次数应为整数");
     else
-        temp = harms(1);
-        HarmList = harms(1):1:harms(2);
-        for iHarm = 1:harms(2) - harms(1) +1
-            if temp < 0
-                HarmList(iHarm) = 2^temp;
+        if harms(1)<=0
+            harmNum = harms(2)-harms(1);
+        else
+            harmNum = harms(2)-harms(1)+1;
+        end
+        HarmList = zeros(1,harmNum);
+        iHarm = 1;
+        for Harm = harms(1):harms(2)
+            if Harm < 0
+                HarmList(iHarm) = 2^Harm;
+            elseif Harm == 0
+                continue;
             else
-                HarmList(iHarm) = temp+1;
+                HarmList(iHarm) = Harm;
             end
-            temp = temp + 1;
+            iHarm = iHarm + 1;
         end
         
     end
-    harms_num = size(HarmList,2);
 
     t = linspace(0,sample_num/fs-1/fs,sample_num);
 
@@ -41,7 +47,7 @@ Explain :
 =========================================
 %}
 
-    channelNum = harms_num*2;
+    channelNum = harmNum*2;
     yef = zeros(channelNum, sample_num, TargetNum);
     %初始化函数输出 yef(# 输出谐波, # 采样长度，# 目标频率数量)
 %     t = repmat(t, channelNum, 1);

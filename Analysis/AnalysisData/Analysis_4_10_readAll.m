@@ -8,6 +8,10 @@ Personname = "WZT";
 Groupname = ["down1","down2","left1",...
     "left2","right1","right2","up1","up2","random"];
 
+% Filename = "..\01-May-2019";
+% Personname = "YWH";
+% Groupname = ["单目标","多目标（不带相位）","多目标（带相位）"];
+
 
 
 COUNT = 1;

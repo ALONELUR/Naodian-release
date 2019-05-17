@@ -12,6 +12,7 @@ classdef  wheelSSVEP < handle
         Samplefreq;
         Magnification;
 
+        % 对比度算法阈值
 
         hasData;        %表征串口是否接收到数据
         isShow;         %表征是否正在进行数据显示
@@ -41,15 +42,6 @@ classdef  wheelSSVEP < handle
         TotalResult;
         IndivResult;
 
-        %识别逻辑
-        LastResult=0;
-        JUDGE_COUNT;
-        JUDGE_COUNT_END=2;
-
-        %实时分析使用参数
-        INIT_COUNT = 0;
-        INIT_COUNT_END = 1;
-
         %Mode
     end
 
@@ -76,8 +68,6 @@ classdef  wheelSSVEP < handle
         end
 
         function mode3(app)
-            app.training();
-            
         end
         
         
@@ -93,8 +83,6 @@ classdef  wheelSSVEP < handle
                  msgbox('蓝牙数据错误');
                  app.pause();
             end
-            
-            
             temp_data = zeros(DATA_NUM,DATA_SIZE);
             ori_data = zeros(DATA_NUM, 8);
             down_data = zeros(2, 8);
@@ -190,27 +178,37 @@ classdef  wheelSSVEP < handle
         function reference(app,divided)
             DATA_NUM = round(app.Gazetime * app.Samplefreq / divided);
             SampleNum = floor(DATA_NUM / 2);
-            app.RefData = cca_reference(app.Tragetfreq,app.Samplefreq/2, SampleNum*divided,[-2,3]);
+            app.RefData = cca_reference(app.Tragetfreq,app.Samplefreq/2, SampleNum*divided,[1,4]);
         end
     
         function judgeANDsend(app)
             p = app.TotalResult;
             [~,index] = max(p);
-            index = index(1);
+            index = index(end);
+%=============阈值判断法
+%             if p(index)>0.42
+%                 fwrite(app.scom, [85 48+index 10]);
+%             else
+%                 fwrite(app.scom, [85 48 10]);
+%             end
             
-            MAX = p(index);
-            TargetN = size(p,2);
-            Average = (sum(p) - MAX) / (TargetN - 1);
-            if p(index)>0.4
-                fwrite(app.scom, [85 48+index 10]);
+%=============对比度判断法
+            threshold = [2.8, 3, 3, 2.6, 2.8, 3, 2, 4]*1.2;%YWH
+%           threshold = [3.1, 3.2, 3, 2.4, 2.7, 3, 2.2, 4];
+%           threshold = [2.8, 3, 2.7, 2.8, 2.5, 3, 2.2, 4] - 0.5;%HMZ
+            p = p - min(p);
+            p = p ./ p(index);
+            constract = p(index) / ((sum(p) - p(index))/(size(p,2)-1));
+            if constract > threshold(index)
+               fwrite(app.scom, [85 48+index 10]);
             else
                 fwrite(app.scom, [85 48 10]);
             end
             
+            
         end
     
         function pause(app)
-            app.INIT_COUNT = 0;
             app.Status = "pause";
             fprintf('Finished\n');
         end
@@ -231,7 +229,7 @@ classdef  wheelSSVEP < handle
                 % 解析数据
                 if app.strRec == 85
                     fprintf('Start as Mode 1\n');
-                    app.reference(app.INIT_COUNT_END);
+                    app.reference(1);
                     app.mode1();
                 elseif app.strRec == 86
                     fprintf('Start as Mode 2\n');
@@ -259,12 +257,11 @@ classdef  wheelSSVEP < handle
 
         % Code that executes after component creation
         function init(app)
-            app.INIT_COUNT = 0;
             
             app.Gazetime = 2;
             app.HarmNum = 5;
             app.FilterNum = 5;
-            app.Tragetfreq = [18.3 17 20.3 19.3 21 16.3 22.3 15.3 ];
+            app.Tragetfreq = [18.3 17 20.3 19.3 21 16.3 22.3 15.3 ] - 1;
             app.Samplefreq = 500;
             app.Magnification = 1;
             
@@ -275,7 +272,7 @@ classdef  wheelSSVEP < handle
             jiaoyan = 'none';
             data_bits = 8;
             stop_bits = 1; 
-            app.Num_Data_com_n = 7;
+            app.Num_Data_com_n = 9;
             app.Num_Tele_com_n = 3;
             app.scom = serial(['COM' '0'+app.Num_Tele_com_n]);
             %=======================================
@@ -286,6 +283,7 @@ classdef  wheelSSVEP < handle
                 try
                     fopen(app.scom);  %打开串口
                     StartSerialPort5(app.Num_Data_com_n);%%Num_Data_com_n 代表数据来源端口号，范围COM1-COM9，不可大于com9
+%                     startup190514(app.Num_Data_com_n);%%Num_Data_com_n 代表数据来源端口号，范围COM1-COM9，不可大于com9
                     fprintf('UART connected.\n');
                 catch 
                     msgbox('串口不可获得！');

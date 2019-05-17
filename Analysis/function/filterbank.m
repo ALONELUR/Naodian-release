@@ -28,7 +28,7 @@ end
 % [num_chans, ~, num_trials] = size(eeg);
 fs=fs/2;
 
-passband = [14, 28, 42, 56, 70,84];
+passband = [18, 32, 46, 52, 66 ,88];
 stopband = passband - 4;
 Wp = [passband(idx_fb)/fs, 90/fs];
 Ws = [stopband(idx_fb)/fs, 100/fs];
