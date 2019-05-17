@@ -13,6 +13,7 @@ classdef  wheelSSVEP < handle
         Magnification;
 
         % 对比度算法阈值
+        threshold
 
         hasData;        %表征串口是否接收到数据
         isShow;         %表征是否正在进行数据显示
@@ -193,13 +194,11 @@ classdef  wheelSSVEP < handle
 %             end
             
 %=============对比度判断法
-            threshold = [2.8, 3, 3, 2.6, 2.8, 3, 2, 4]*1.2;%YWH
-%           threshold = [3.1, 3.2, 3, 2.4, 2.7, 3, 2.2, 4];
-%           threshold = [2.8, 3, 2.7, 2.8, 2.5, 3, 2.2, 4] - 0.5;%HMZ
+            
             p = p - min(p);
             p = p ./ p(index);
             constract = p(index) / ((sum(p) - p(index))/(size(p,2)-1));
-            if constract > threshold(index)
+            if constract > app.threshold(index)
                fwrite(app.scom, [85 48+index 10]);
             else
                 fwrite(app.scom, [85 48 10]);
@@ -228,10 +227,14 @@ classdef  wheelSSVEP < handle
                 app.strRec = fread(obj, 1);
                 % 解析数据
                 if app.strRec == 85
+                    app.threshold = [2.8, 3, 3, 2.6, 2.8, 3, 2, 4]*1.2;%YWH
+%           threshold = [3.1, 3.2, 3, 2.4, 2.7, 3, 2.2, 4];
+%           threshold = [2.8, 3, 2.7, 2.8, 2.5, 3, 2.2, 4] - 0.5;%HMZ
                     fprintf('Start as Mode 1\n');
                     app.reference(1);
                     app.mode1();
                 elseif app.strRec == 86
+                    app.threshold = [2.8, 3, 3, 2.6, 2.8, 3, 2, 4]*1.2;%YWH
                     fprintf('Start as Mode 2\n');
                    app.reference(1);
                    app.mode2();
