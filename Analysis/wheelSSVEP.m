@@ -13,12 +13,8 @@ classdef  wheelSSVEP < handle
         Magnification;
 
         % 对比度算法阈值
-        threshold
+        threshold;
 
-        hasData;        %表征串口是否接收到数据
-        isShow;         %表征是否正在进行数据显示
-        isStopDisp;     %表征是否按下了【暂停】按钮
-        numRec;             %接收字符计数
         strRec;            %已接收的字符串
         %绘图句柄
         Timeplot;
@@ -68,12 +64,8 @@ classdef  wheelSSVEP < handle
             app.pause();
         end
 
-        function mode3(app)
-        end
-        
         
         function receive (app,divided)
-            tic
             
             DATA_NUM = round(app.Gazetime * app.Samplefreq / divided);
             DATA_SIZE = 34;
@@ -122,7 +114,6 @@ classdef  wheelSSVEP < handle
             
             app.OrigData = ori_data;
             app.TempData = dec_data;
-            temp=toc;
             app.ReceiveT = [app.ReceiveT , temp];
         end
         
@@ -227,9 +218,7 @@ classdef  wheelSSVEP < handle
                 app.strRec = fread(obj, 1);
                 % 解析数据
                 if app.strRec == 85
-                    app.threshold = [2.8, 3, 3, 2.6, 2.8, 3, 2, 4]*1.2;%YWH
-%           threshold = [3.1, 3.2, 3, 2.4, 2.7, 3, 2.2, 4];
-%           threshold = [2.8, 3, 2.7, 2.8, 2.5, 3, 2.2, 4] - 0.5;%HMZ
+                    app.threshold = [2.8, 3, 3, 2.6, 2.8, 3, 2, 4]*1.4;%YWH
                     fprintf('Start as Mode 1\n');
                     app.reference(1);
                     app.mode1();
@@ -238,6 +227,11 @@ classdef  wheelSSVEP < handle
                     fprintf('Start as Mode 2\n');
                    app.reference(1);
                    app.mode2();
+                elseif app.strRec == 87
+                    app.threshold = [2.8, 3, 3, 2.6, 2.8, 3, 2, 4]*0.7;%YWH
+                    fprintf('Start as Mode 3\n');
+                    app.reference(1);
+                    app.mode1();
                 end
             end
         end
@@ -275,7 +269,7 @@ classdef  wheelSSVEP < handle
             jiaoyan = 'none';
             data_bits = 8;
             stop_bits = 1; 
-            app.Num_Data_com_n = 9;
+            app.Num_Data_com_n = 7;
             app.Num_Tele_com_n = 3;
             app.scom = serial(['COM' '0'+app.Num_Tele_com_n]);
             %=======================================
