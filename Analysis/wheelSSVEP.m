@@ -43,6 +43,7 @@ classdef  wheelSSVEP < handle
     end
 
     methods (Access = public)
+        % 此函数是程序连续进行分析的程序
         function mode1(app)
              while ~get(app.scom, 'BytesAvailable')         
                 app.receive(1);
@@ -53,7 +54,7 @@ classdef  wheelSSVEP < handle
             end
            app.pause();
         end
-    
+        % 此函数是程序只进行一次分析的程序
         function mode2(app)
             app.receive(1);
             app.AnalysisData = app.TempData;
@@ -64,14 +65,15 @@ classdef  wheelSSVEP < handle
             app.pause();
         end
 
-        
+        % 此函数是接收数据，进行数据解析的函数
         function receive (app,divided)
             
             DATA_NUM = round(app.Gazetime * app.Samplefreq / divided);
             DATA_SIZE = 34;
             NUM = DATA_NUM * DATA_SIZE;
-            receive_data = ReadSerialPort18(app.Num_Data_com_n, NUM);
-            
+%             receive_data = ReadSerialPort18(app.Num_Data_com_n, NUM);
+            receive_data = readlast20190528(app.Num_Data_com_n, NUM);
+
             if(receive_data(1)==205 && receive_data(end)==205)
                  msgbox('蓝牙数据错误');
                  app.pause();
@@ -114,9 +116,9 @@ classdef  wheelSSVEP < handle
             
             app.OrigData = ori_data;
             app.TempData = dec_data;
-            app.ReceiveT = [app.ReceiveT , temp];
         end
         
+        % 此程序是对数据进行分析的程序
         function analytical_data(app,mod)
             if mod==2
             % FFT
@@ -150,29 +152,7 @@ classdef  wheelSSVEP < handle
                 app.Tragetfreq);
         end
 
-        function  training(app)
-            TrainNum = size(app.Tragetfreq, 2);
-            for iTrain = 1 : TrainNum
-                fwrite(app.scom, [85 64+index 10]);
-                app.receive(0.5);
-                app.AnalysisData = app.TempData;
-                app.OrigtolData = app.OrigData;
-                app.analytical_data(1);   
-            end
-        end
-           
-        function Axesplot(app)
-                figure(1);
-                app.Ccaplot1 = plot(1:length(app.TotalResult), app.TotalResult);
-                title('Analysis Result');
-        end
-    
-        function reference(app,divided)
-            DATA_NUM = round(app.Gazetime * app.Samplefreq / divided);
-            SampleNum = floor(DATA_NUM / 2);
-            app.RefData = cca_reference(app.Tragetfreq,app.Samplefreq/2, SampleNum*divided,[1,4]);
-        end
-    
+        % 对分析得到的相关系数进行判断，是否显著性足够高，并且发送结果
         function judgeANDsend(app)
             p = app.TotalResult;
             [~,index] = max(p);
@@ -190,12 +170,36 @@ classdef  wheelSSVEP < handle
             p = p ./ p(index);
             constract = p(index) / ((sum(p) - p(index))/(size(p,2)-1));
             if constract > app.threshold(index)
-               fwrite(app.scom, [85 48+index 10]);
+                fwrite(app.scom, [85 48+index 10]);
             else
                 fwrite(app.scom, [85 48 10]);
             end
-            
-            
+        end
+
+        % 这个程序没啥用，还没有完成
+        function  training(app)
+            TrainNum = size(app.Tragetfreq, 2);
+            for iTrain = 1 : TrainNum
+                fwrite(app.scom, [85 64+index 10]);
+                app.receive(0.5);
+                app.AnalysisData = app.TempData;
+                app.OrigtolData = app.OrigData;
+                app.analytical_data(1);   
+            end
+        end
+           
+        % 程序是绘图程序
+        function Axesplot(app)
+                figure(1);
+                app.Ccaplot1 = plot(1:length(app.TotalResult), app.TotalResult);
+                title('Analysis Result');
+        end
+    
+        % 生成参考信号的程序
+        function reference(app,divided)
+            DATA_NUM = round(app.Gazetime * app.Samplefreq / divided);
+            SampleNum = floor(DATA_NUM / 2);
+            app.RefData = cca_reference(app.Tragetfreq,app.Samplefreq/2, SampleNum*divided,[1,4]);
         end
     
         function pause(app)
@@ -213,7 +217,6 @@ classdef  wheelSSVEP < handle
             % 若串口有数据，接收所有数据
             if n
                 % 更新hasData参数，表明串口有数据需要显示
-                app.hasData = true;
                 % 读取串口数据
                 app.strRec = fread(obj, 1);
                 % 解析数据
@@ -228,7 +231,8 @@ classdef  wheelSSVEP < handle
                    app.reference(1);
                    app.mode2();
                 elseif app.strRec == 87
-                    app.threshold = [2.8, 3, 3, 2.6, 2.8, 3, 2, 4]*0.7;%YWH
+                    app.threshold = [2.8, 3, 3, 2.6, 2.8, 3, 2, 4]*1.1;%YWH
+%                     app.threshold = ones(1,8);
                     fprintf('Start as Mode 3\n');
                     app.reference(1);
                     app.mode1();
@@ -252,11 +256,11 @@ classdef  wheelSSVEP < handle
     % Callbacks that handle component events
     methods (Access = private)
 
-        % Code that executes after component creation
+        % 每次程序开始都会执行
         function init(app)
             
-            app.Gazetime = 2;
-            app.HarmNum = 5;
+            app.Gazetime = 2.5;
+            app.HarmNum = 2;
             app.FilterNum = 5;
             app.Tragetfreq = [18.3 17 20.3 19.3 21 16.3 22.3 15.3 ] - 1;
             app.Samplefreq = 500;
@@ -267,10 +271,12 @@ classdef  wheelSSVEP < handle
             delete(instrfind);
             baud_rate = 9600;
             jiaoyan = 'none';
-            data_bits = 8;
+            data_bits = 8;                                                                                          
             stop_bits = 1; 
-            app.Num_Data_com_n = 7;
+            app.Num_Data_com_n = 9;
+            
             app.Num_Tele_com_n = 3;
+  
             app.scom = serial(['COM' '0'+app.Num_Tele_com_n]);
             %=======================================
             set(app.scom, 'BaudRate', baud_rate, 'Parity', jiaoyan, 'DataBits',...
@@ -278,16 +284,16 @@ classdef  wheelSSVEP < handle
             'BytesAvailableFcnMode', 'byte', 'BytesAvailableFcn', {@app.bytes,app},...
             'TimerPeriod', 0.05);
                 try
-                    fopen(app.scom);  %打开串口
-                    StartSerialPort5(app.Num_Data_com_n);%%Num_Data_com_n 代表数据来源端口号，范围COM1-COM9，不可大于com9
-%                     startup190514(app.Num_Data_com_n);%%Num_Data_com_n 代表数据来源端口号，范围COM1-COM9，不可大于com9
+                    fopen(app.scom); %打开串口
+%                     StartSerialPort5(app.Num_Data_com_n);%%Num_Data_com_n 代表数据来源端口号，范围COM1-COM9，不可大于com9
+                    startlast20190528(app.Num_Data_com_n);%%Num_Data_com_n 代表数据来源端口号，范围COM1-COM9，不可大于com9
                     fprintf('UART connected.\n');
                 catch 
                     msgbox('串口不可获得！');
                     app.delete();
                 end
         end
-    end
+    end                                                                                                
 
     methods (Access = public)
 
